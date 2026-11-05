@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Training Log</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f7f9;--card:#fff;--tx:#1b2430;--mu:#667085;--ac:#1f6feb;--bd:#d9dee5;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b222b;--tx:#e8ecf1;--mu:#98a2b3;--ac:#5aa2ff;--bd:#2f3946;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1b222b;--tx:#e8ecf1;--mu:#98a2b3;--ac:#5aa2ff;--bd:#2f3946;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:720px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:6px 0 2px}.sub{color:var(--mu);font-size:12px}
+nav{display:flex;gap:4px;margin:10px 0;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:4px 0;z-index:5}
+nav button{flex:1;padding:9px 2px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px}
+label{display:block;font-size:12px;color:var(--mu);margin:8px 0 3px}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input[type=checkbox]{width:auto}
+.row{display:grid;grid-template-columns:30px 1fr 1fr 30px;gap:6px;align-items:center;margin-top:6px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row span{color:var(--mu);font-size:13px;text-align:center}
+.btn{padding:10px 14px;border:0;border-radius:8px;background:var(--ac);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.btn.g{background:transparent;color:var(--ac);border:1px solid var(--bd)}
+.x{background:none;border:0;color:var(--mu);font-size:18px;cursor:pointer}
+.bar{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.hint{color:var(--mu);font-size:12px;margin-top:6px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center}
+.stat b{display:block;font-size:17px}.stat small{color:var(--mu);font-size:11px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:center;white-space:nowrap}
+th{color:var(--mu);font-weight:600}
+svg{width:100%;height:auto;display:block}
+textarea{resize:vertical}.out nav,.out section{display:none!important}body:not(.out) #auth{display:none}.hide{display:none}.big{font-size:22px;font-weight:700}
+.pl{display:grid;grid-template-columns:44px 1fr;gap:6px;align-items:center;margin-top:5px}
+.pl.t b{color:var(--ac)}
+.chips button{padding:7px 10px;font-size:13px}
+</style></head><body class="out"><main>
+<h1>Training Log</h1><div class="sub" id="sync">Loading…</div>
+<div class="card hide" id="setup" style="margin-top:12px"><b>Connect to Supabase</b><div class="hint">Paste your Project URL and publishable key. They are saved on this device only.</div><label>Project URL</label><input id="su" placeholder="https://xxxx.supabase.co"><label>Publishable key</label><input id="sk" placeholder="sb_publishable_..."><div class="bar"><button class="btn" id="ssave">Save</button></div></div>
+<div class="card hide" id="auth" style="margin-top:12px"><b>Sign in</b><label>Email</label><input id="em" type="email" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><div class="bar"><button class="btn" id="login">Sign in</button><button class="btn g" id="rcfg">Change Supabase settings</button></div><div id="aerr" style="color:#d92d20;font-size:13px;margin-top:8px"></div></div>
+<nav id="nav"><button data-t="home" class="on">Home</button><button data-t="plan">Plan</button><button data-t="gym">Gym</button><button data-t="cardio">Cardio</button><button data-t="tests">Tests</button><button data-t="prog">Progress</button></nav>
+
+<section id="v-home">
+ <div class="card"><label>Pre-season start date</label><input type="date" id="start"><div class="big" id="cd"></div></div>
+ <div class="card"><b>Today</b><div id="today"></div></div>
+ <div class="stats" id="wstats"></div>
+ <div class="card"><b>Weekly plan</b><div class="hint">Type what’s planned each day (e.g. “Gym A + easy run”). Today is highlighted.</div><div id="plan"></div></div>
+ <div class="card"><b>Data</b><div class="bar"><button class="btn g" id="exp">Export backup (JSON)</button><label class="btn g" style="margin:0">Import backup<input type="file" accept=".json" id="imp" class="hide"></label><button class="btn g" id="so">Sign out</button></div></div>
+</section>
+
+<section id="v-plan" class="hide">
+ <div class="card"><b>Plan a session</b>
+  <div class="g2"><div><label>Date</label><input type="date" id="pdate"></div><div><label>Type</label><select id="pkind"><option value="gym">Gym</option><option value="run">Running</option><option value="cond">Conditioning</option></select></div></div>
+  <div id="pgym"><label>Template</label><select id="ptpl"></select><label>Or a single exercise</label><select id="pex1"></select></div>
+  <div id="prun" class="hide g2"><div><label>Session type</label><select id="prt"></select></div><div><label>Specific session</label><select id="prs"></select></div></div>
+  <div id="pcond" class="hide g2"><div><label>Activity</label><input id="pca" placeholder="e.g. Bike"></div><div><label>Duration (min)</label><input type="number" inputmode="numeric" id="pcd"></div></div>
+  <label>Note</label><input id="pnote" placeholder="Target, focus, reminders…">
+  <div class="bar"><button class="btn" id="padd">Add to plan</button></div>
+ </div>
+ <div class="card"><b>Upcoming</b><div class="scroll"><table id="pup"></table></div></div>
+ <div class="card"><b>Session templates</b><div id="tpls"></div><div class="g2" style="margin-top:8px"><input id="tpn" placeholder="Template name"><input id="tpe" placeholder="Exercises, comma separated"></div><div class="bar"><button class="btn g" id="tpadd">Add template</button></div></div>
+ <div class="card"><b>Progressions</b><div class="hint">Sets×reps to hit in order. After the last step, add weight and restart. The Gym tab shows your next target.</div><div id="progs"></div><div class="g2" style="margin-top:8px"><select id="pgx"></select><input id="pgv" placeholder="3x3, 3x4, 4x3"></div><div class="bar"><button class="btn g" id="pgadd">Save progression</button></div></div>
+ <div class="card"><b>Notes</b><textarea id="notes" rows="12"></textarea></div>
+</section>
+
+<section id="v-gym" class="hide">
+ <div class="card">
+  <label>Date</label><input type="date" id="date">
+  <label>Planned today</label><div id="pchips" class="bar chips" style="margin-top:4px"></div>
+  <label>Exercise (pick once)</label><select id="ex"></select>
+  <div class="hint" id="last"></div><div class="hint" id="sug"></div>
+  <div id="sets"></div>
+  <div class="bar"><button class="btn g" id="addset">+ Set</button><button class="btn" id="save">Save exercise</button></div>
+  <label>Rest timer</label>
+  <div class="bar chips" style="margin-top:0"><b id="rt" style="min-width:90px">Rest timer</b><button class="btn g" data-r="60">1:00</button><button class="btn g" data-r="90">1:30</button><button class="btn g" data-r="120">2:00</button><button class="btn g" data-r="180">3:00</button></div>
+  <label>Add a new exercise</label>
+  <div style="display:flex;gap:6px"><input id="newex" placeholder="e.g. Hip Thrust"><button class="btn g" id="addex">Add</button></div>
+ </div>
+ <div class="card"><b>Recent entries</b><div class="scroll"><table id="recent"></table></div></div>
+</section>
+
+<section id="v-cardio" class="hide">
+ <div class="card">
+  <div class="hint" id="cplan"></div>
+  <div class="g2"><div><label>Date</label><input type="date" id="cdate"></div><div><label>Type</label><select id="ctype"></select></div><div><label>Specific session</label><select id="csess"></select></div><div><label># Reps (intervals)</label><input type="number" inputmode="numeric" id="crep"></div>
+  <div><label>Distance (km)</label><input type="number" inputmode="decimal" id="ckm"></div><div><label>Duration (min)</label><input type="number" inputmode="decimal" id="cmin"></div>
+  <div><label>Avg heart rate</label><input type="number" inputmode="numeric" id="chr"></div><div><label>Effort (RPE 1–10)</label><input type="number" inputmode="numeric" id="crpe" min="1" max="10"></div></div>
+  <div class="bar"><button class="btn" id="csave">Save session</button><label class="btn g" style="margin:0">Import Garmin CSV<input type="file" accept=".csv" id="gimp" class="hide"></label></div>
+  <div class="hint">Garmin Connect → Activities → Export CSV. Runs, rides and other activities are added; duplicates are skipped.</div>
+ </div>
+ <div class="card"><b>Recent sessions</b><div class="scroll"><table id="crecent"></table></div></div>
+</section>
+
+<section id="v-tests" class="hide">
+ <div class="card">
+  <div class="g2"><div><label>Date</label><input type="date" id="tdate"></div><div><label>Test</label><select id="tname"></select></div></div>
+  <label>Result</label><input type="number" inputmode="decimal" step="any" id="tval">
+  <div class="bar"><button class="btn" id="tsave">Save result</button></div>
+  <label>Add a new test</label>
+  <div class="g2"><input id="tn" placeholder="Name"><input id="tu" placeholder="Unit (s, cm, kg…)"></div>
+  <div class="bar"><label style="margin:0"><input type="checkbox" id="tlo"> Lower is better</label><button class="btn g" id="tadd">Add test</button></div>
+ </div>
+ <div class="card"><b>Summary</b><div class="scroll"><table id="tsum"></table></div></div>
+ <div class="card"><b>Recent results</b><div class="scroll"><table id="trecent"></table></div></div>
+</section>
+
+<section id="v-prog" class="hide">
+ <div class="card"><label>View</label><select id="pex"></select></div>
+ <div class="stats" id="stats"></div>
+ <div class="card"><b id="ctitle"></b><div id="chart"></div></div>
+ <div class="card"><b>History</b><div class="scroll"><table id="ptable"></table></div></div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
+<script>
+const SB_URL="PASTE_YOUR_SUPABASE_URL",SB_KEY="PASTE_YOUR_ANON_KEY";
+const DEF=["Zercher Squat","Bench Press","Chin-up","SL Landmine RDL","Calf Raise","Plyometrics","Squat","Deadlift","Overhead Press","Barbell Row"];
+const TD=[{n:"20m sprint",u:"s",lo:1},{n:"40m sprint",u:"s",lo:1},{n:"Vertical jump",u:"cm"},{n:"Broad jump",u:"cm"},{n:"2km time trial",u:"min",lo:1},{n:"Yo-Yo IR1 level",u:""},{n:"Max chin-ups",u:"reps"},{n:"Bench 3RM",u:"kg"},{n:"Zercher 3RM",u:"kg"},{n:"Critical power",u:"W"}];
+const RT=["Speed","VO2","Threshold","Easy","Long","Tempo","Recovery","Football"],CT=["Run",...RT,"Cycling","Conditioning","Other"],DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const isRun=t=>RT.includes(t)||/run|speed/i.test(t);
+const ensure=l=>l.forEach(x=>{if(!S.exercises.includes(x))S.exercises.push(x)});
+const base=()=>({entries:[],exercises:DEF.slice(),cardio:[],tests:[],testDefs:TD.map(x=>({...x})),plan:{},start:"2026-11-16",prog:{},tpl:[],plans:[],sess:[],notes:""});
+let S=base(),ref=null,cur=[{},{},{}],tm=null,rt=null,rs=0;
+const $=i=>document.getElementById(i);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num=v=>parseFloat(v)||0,r1=v=>Math.round(v*10)/10;
+const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const wk=s=>{const d=new Date(s+"T12:00");d.setDate(d.getDate()-((d.getDay()+6)%7));return ymd(d)};
+const byD=(a,b)=>a.date<b.date?-1:a.date>b.date?1:0;
+const best=e=>Math.max(0,...e.sets.map(s=>num(s.w)));
+const vol=e=>e.sets.reduce((a,s)=>a+num(s.w)*num(s.r),0);
+const e1=e=>Math.max(0,...e.sets.map(s=>num(s.r)>0?num(s.w)*(1+num(s.r)/30):0));
+const fmt=s=>s.map(x=>num(x.w)+"×"+num(x.r)).join(", ");
+const pace=c=>{if(!c.km||!c.min)return"";const p=c.min/c.km,m=Math.floor(p),s=Math.round((p-m)*60);return m+":"+String(s%60).padStart(2,"0")+(s>=60?"":"")};
+const status=t=>{$("sync").textContent=t};
+const opt=(arr,sel)=>{const v=sel.value;sel.innerHTML=arr.map(x=>`<option>${esc(x)}</option>`).join("");if(arr.includes(v))sel.value=v};
+let sb,uid,pending=false;
+const strip=()=>({...S,cardio:S.cardio.filter(c=>!c.src)});
+function persist(){
+ if(!uid)return;pending=true;status("Saving…");clearTimeout(tm);
+ tm=setTimeout(async()=>{const{error}=await sb.from("app_state").upsert({user_id:uid,data:strip(),updated_at:new Date().toISOString()});pending=false;status(error?"Save failed: "+error.message:"Saved to your account")},500);
+}
+async function loadState(first){
+ status("Loading…");
+ const a=await sb.from("app_state").select("data").maybeSingle();
+ if(a.error){status("Load failed: "+a.error.message);return}
+ S=Object.assign(base(),a.data?a.data.data:{});
+ const g=await sb.from("garmin_activities").select("*").order("start_date");
+ (g.data||[]).forEach(r=>{
+  const c={id:"g"+r.activity_id,src:"g",date:r.start_date,type:r.type||"Other",session:"",reps:0,km:r1(num(r.distance_km)),min:r1(num(r.duration_min)),hr:num(r.avg_hr)};
+  if(!S.cardio.some(m=>m.date===c.date&&Math.abs(num(m.km)-c.km)<.05&&Math.abs(num(m.min)-c.min)<1))S.cardio.push(c);
+ });
+ renderAll();if(first)pick($("ex").value);status("Loaded");
+}
+const lastOf=ex=>S.entries.filter(e=>e.ex===ex).sort(byD).pop();
+const sc=a=>(a||"").split(/[^0-9x]+/i).filter(x=>/^\d+x\d+$/i.test(x)).map(x=>x.toLowerCase());
+function nextTarget(ex){
+ const L=S.prog[ex];if(!L||!L.length)return null;
+ const l=lastOf(ex);if(!l)return{i:0,L,t:L[0]};
+ const n=l.sets.length,r=Math.min(...l.sets.map(s=>num(s.r)));let i=-1;
+ L.forEach((x,k)=>{const[a,b]=x.split("x").map(Number);if(n>=a&&r>=b)i=k});
+ return i<L.length-1?{i:i+1,L,t:L[i+1]}:{i:0,L,t:L[0],add:1};
+}
+function pick(ex){const nt=nextTarget(ex);cur=Array.from({length:nt?+nt.t.split("x")[0]:3},()=>({}));renderSets()}
+function renderSets(){
+ const ex=$("ex").value,l=lastOf(ex),nt=nextTarget(ex);
+ $("last").textContent=l?"Last time ("+l.date+"): "+fmt(l.sets):"No previous sessions for this exercise.";
+ $("sug").textContent=nt?(nt.add?"Progression complete: add weight, then restart at "+nt.t+".":"Progression: "+nt.L.map((x,k)=>k===nt.i?"["+x+"]":x).join(" → ")+" (today’s target "+nt.t+")"):"";
+ const pw=l?num(l.sets[0].w):0,pr=nt?nt.t.split("x")[1]:"Reps";
+ $("sets").innerHTML=cur.map((s,i)=>`<div class="row"><span>${i+1}</span><input type="number" inputmode="decimal" placeholder="${pw||"Weight"}" data-i="${i}" data-k="w" value="${s.w??""}"><input type="number" inputmode="numeric" placeholder="${pr}" data-i="${i}" data-k="r" value="${s.r??""}"><button class="x" data-d="${i}">×</button></div>`).join("");
+}
+const tbl=(h,rows)=>rows.length?"<tr>"+h.map(x=>`<th>${x}</th>`).join("")+"</tr>"+rows.join(""):"<tr><td>Nothing logged yet.</td></tr>";
+function renderLists(){
+ const g=S.entries.slice().sort(byD).reverse().slice(0,10);
+ $("recent").innerHTML=tbl(["Date","Exercise","Sets",""],g.map(e=>`<tr><td>${e.date}</td><td>${esc(e.ex)}</td><td>${fmt(e.sets)}</td><td><button class="x" data-del="g:${e.id}">×</button></td></tr>`));
+ const c=S.cardio.slice().sort(byD).reverse().slice(0,10);
+ $("crecent").innerHTML=tbl(["Date","Type","Session","km","min","Pace","HR",""],c.map(e=>`<tr><td>${e.date}</td><td>${esc(e.type)}</td><td>${e.reps>1?e.reps+"× ":""}${esc(e.session||"")}</td><td>${e.km||""}</td><td>${e.min||""}</td><td>${isRun(e.type)?pace(e):""}</td><td>${e.hr||""}</td><td><button class="x" data-del="c:${e.id}">×</button></td></tr>`));
+ const t=S.tests.slice().sort(byD).reverse().slice(0,10);
+ $("trecent").innerHTML=tbl(["Date","Test","Result",""],t.map(e=>`<tr><td>${e.date}</td><td>${esc(e.name)}</td><td>${e.val}</td><td><button class="x" data-del="t:${e.id}">×</button></td></tr>`));
+ const sm=[];
+ S.testDefs.forEach(d=>{const r=S.tests.filter(x=>x.name===d.n).sort(byD);if(!r.length)return;const v=r.map(x=>x.val),b=d.lo?Math.min(...v):Math.max(...v),l=v[v.length-1],ch=r1(l-v[0]);sm.push(`<tr><td>${esc(d.n)}</td><td>${l} ${esc(d.u)}</td><td>${b}</td><td>${r.length>1?(ch>0?"+":"")+ch:"–"}</td></tr>`)});
+ $("tsum").innerHTML=tbl(["Test","Latest","Best","Change"],sm);
+}
+function renderHome(){
+ $("start").value=S.start||"";
+ const d=Math.ceil((new Date(S.start+"T00:00")-new Date(ymd(new Date())+"T00:00"))/864e5);
+ $("cd").textContent=!S.start?"":d>0?d+" days to go":d===0?"Today’s the day":"Pre-season is underway";
+ const w=wk(ymd(new Date())),g=S.entries.filter(e=>wk(e.date)===w),c=S.cardio.filter(e=>wk(e.date)===w);
+ $("wstats").innerHTML=[["Gym days",new Set(g.map(e=>e.date)).size],["Gym volume",Math.round(g.reduce((a,e)=>a+vol(e),0))],["Run km",r1(c.filter(e=>isRun(e.type)).reduce((a,e)=>a+num(e.km),0))],["Cardio min",Math.round(c.reduce((a,e)=>a+num(e.min),0))]].map(a=>`<div class="stat"><b>${a[1]}</b><small>${a[0]}</small></div>`).join("");
+ const td=(new Date().getDay()+6)%7;
+ $("plan").innerHTML=DAYS.map((n,i)=>`<div class="pl ${i===td?"t":""}"><b>${n}</b><input data-p="${n}" value="${esc(S.plan[n]||"")}"></div>`).join("");
+}
+function series(sel){
+ const k=sel[0],n=sel.slice(2);
+ if(k==="g"){const es=S.entries.filter(e=>e.ex===n).sort(byD);
+  const bw=es.length&&es.every(e=>best(e)===0),f=bw?(e=>e.sets.reduce((a,s)=>a+num(s.r),0)):best;
+  return{t:bw?"Total reps per session":"Best weight per session",pts:es.map(e=>[e.date,f(e)]),h:["Date","Sets","Best","Volume"],rows:es.map(e=>[e.date,fmt(e.sets),best(e),Math.round(vol(e))]),st:[["Sessions",es.length],["Best weight",Math.max(0,...es.map(best))],["Est. 1RM",Math.round(Math.max(0,...es.map(e1)))],["Last volume",es.length?Math.round(vol(es[es.length-1])):0]]}}
+ if(k==="t"){const d=S.testDefs.find(x=>x.n===n)||{},r=S.tests.filter(x=>x.name===n).sort(byD),v=r.map(x=>x.val);
+  return{t:n+(d.u?" ("+d.u+")":""),pts:r.map(x=>[x.date,x.val]),h:["Date","Result"],rows:r.map(x=>[x.date,x.val]),st:[["Results",r.length],["Latest",v.length?v[v.length-1]:"–"],["Best",v.length?(d.lo?Math.min(...v):Math.max(...v)):"–"],["Change",v.length>1?r1(v[v.length-1]-v[0]):"–"]]}}
+ const m={};S.cardio.filter(e=>isRun(e.type)).forEach(e=>{const w=wk(e.date);(m[w]=m[w]||{km:0,n:0}).km+=num(e.km);m[w].n++});
+ const ws=Object.keys(m).sort(),km=ws.map(w=>r1(m[w].km));
+ return{t:"Running km per week",pts:ws.map((w,i)=>[w,km[i]]),h:["Week of","km","Runs"],rows:ws.map((w,i)=>[w,km[i],m[w].n]),st:[["Weeks",ws.length],["Last week",km.length?km[km.length-1]:0],["Best week",Math.max(0,...km)],["Total km",r1(km.reduce((a,b)=>a+b,0))]]};
+}
+function renderProg(){
+ const sel=$("pex"),v=sel.value;
+ sel.innerHTML='<optgroup label="Gym">'+S.exercises.map(x=>`<option value="g:${esc(x)}">${esc(x)}</option>`).join("")+'</optgroup><optgroup label="Tests">'+S.testDefs.map(x=>`<option value="t:${esc(x.n)}">${esc(x.n)}</option>`).join("")+'</optgroup><optgroup label="Running"><option value="w:run">Weekly km</option></optgroup>';
+ if(v)sel.value=v;
+ const s=series(sel.value);
+ $("stats").innerHTML=s.st.map(a=>`<div class="stat"><b>${a[1]}</b><small>${a[0]}</small></div>`).join("");
+ $("ctitle").textContent=s.t;
+ $("ptable").innerHTML=tbl(s.h,s.rows.slice().reverse().map(r=>"<tr>"+r.map(x=>`<td>${esc(x)}</td>`).join("")+"</tr>"));
+ const p=s.pts;
+ if(p.length<2){$("chart").innerHTML='<div class="hint">Log at least two results to see a chart.</div>';return}
+ const W=600,H=220,m=34,ys=p.map(a=>a[1]),lo=Math.min(...ys),hi=Math.max(...ys),sp=(hi-lo)||1;
+ const X=i=>m+i*(W-2*m)/(p.length-1),Y=y=>H-m-(y-lo)/sp*(H-2*m);
+ $("chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}"><g stroke="var(--bd)"><line x1="${m}" y1="${H-m}" x2="${W-m}" y2="${H-m}"/><line x1="${m}" y1="${m}" x2="${m}" y2="${H-m}"/></g><polyline points="${p.map((a,i)=>X(i)+","+Y(a[1])).join(" ")}" fill="none" stroke="var(--ac)" stroke-width="2.5"/>${p.map((a,i)=>`<circle cx="${X(i)}" cy="${Y(a[1])}" r="4" fill="var(--ac)"/>`).join("")}<g fill="var(--mu)" font-size="12"><text x="4" y="${Y(hi)+4}">${hi}</text><text x="4" y="${Y(lo)+4}">${lo}</text><text x="${m}" y="${H-10}">${p[0][0]}</text><text x="${W-m}" y="${H-10}" text-anchor="end">${p[p.length-1][0]}</text></g></svg>`;
+}
+const planTxt=p=>p.title+(p.kind==="gym"&&p.items.length>1?" ("+p.items.join(", ")+")":"")+(p.kind==="cond"&&p.min?" "+p.min+" min":"")+(p.note?" — "+p.note:"");
+const doneP=p=>p.kind==="gym"?p.items.every(x=>S.entries.some(e=>e.date===p.date&&e.ex===x)):p.kind==="run"?S.cardio.some(c=>c.date===p.date&&isRun(c.type)&&(!p.type||c.type===p.type)):S.cardio.some(c=>c.date===p.date&&!isRun(c.type));
+function renderToday(){
+ const t=ymd(new Date()),ps=S.plans.filter(p=>p.date===t),r=ps.filter(p=>p.kind!=="gym");
+ $("today").innerHTML=ps.length?ps.map(p=>`<div>${doneP(p)?"✓":"○"} ${esc(planTxt(p))}</div>`).join(""):'<span class="hint">Nothing planned for today. Add sessions in the Plan tab.</span>';
+ $("cplan").textContent=r.length?"Planned today: "+r.map(planTxt).join("; "):"";
+ const it=[];ps.filter(p=>p.kind==="gym").forEach(p=>p.items.forEach(x=>{if(!it.includes(x))it.push(x)}));
+ $("pchips").innerHTML=it.length?it.map(x=>`<button class="btn g" data-pick="${esc(x)}">${S.entries.some(e=>e.date===t&&e.ex===x)?"✓ ":""}${esc(x)}</button>`).join(""):'<span class="hint">Nothing planned for today.</span>';
+}
+function renderPlan(){
+ opt(["— single exercise —"].concat(S.tpl.map(x=>x.n)),$("ptpl"));opt(S.exercises,$("pex1"));opt(RT,$("prt"));opt([""].concat(S.sess.map(x=>x.n)),$("prs"));opt(S.exercises,$("pgx"));
+ const from=ymd(new Date(Date.now()-7*864e5));
+ $("pup").innerHTML=tbl(["Date","Plan","Done",""],S.plans.filter(p=>p.date>=from).sort(byD).map(p=>`<tr><td>${p.date}</td><td>${esc(planTxt(p))}</td><td>${doneP(p)?"✓":""}</td><td><button class="x" data-pld="${p.id}">×</button></td></tr>`));
+ $("tpls").innerHTML=S.tpl.map((t,i)=>`<div class="pl" style="grid-template-columns:80px 1fr 30px"><b>${esc(t.n)}</b><input data-tp="${i}" value="${esc(t.ex.join(", "))}"><button class="x" data-tpd="${i}">×</button></div>`).join("");
+ $("progs").innerHTML=Object.keys(S.prog).map(k=>`<div class="pl" style="grid-template-columns:120px 1fr"><b>${esc(k)}</b><input data-pg="${esc(k)}" value="${esc(S.prog[k].join(", "))}"></div>`).join("");
+ $("notes").value=S.notes||"";
+}
+function renderAll(){opt(S.exercises,$("ex"));opt(CT,$("ctype"));opt([""].concat(S.sess.map(x=>x.n)),$("csess"));opt(S.testDefs.map(x=>x.n),$("tname"));renderSets();renderLists();renderHome();renderPlan();renderToday();renderProg()}
+function tab(n){["home","plan","gym","cardio","tests","prog"].forEach(t=>$("v-"+t).classList.toggle("hide",t!==n));document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===n));if(n==="prog")renderProg()}
+$("nav").onclick=e=>{if(e.target.dataset.t)tab(e.target.dataset.t)};
+$("pex").onchange=renderProg;
+$("ex").onchange=()=>pick($("ex").value);
+$("addset").onclick=()=>{cur.push({});renderSets()};
+$("sets").oninput=e=>{const t=e.target;if(t.dataset.i!==undefined)cur[t.dataset.i][t.dataset.k]=t.value};
+$("sets").onclick=e=>{const d=e.target.dataset.d;if(d!==undefined){cur.splice(d,1);if(!cur.length)cur=[{}];renderSets()}};
+$("save").onclick=()=>{
+ const sets=cur.filter(s=>num(s.w)>0||num(s.r)>0);
+ if(!sets.length){status("Enter at least one set first");return}
+ S.entries.push({id:Date.now(),date:$("date").value,ex:$("ex").value,sets});persist();renderAll();pick($("ex").value);status("Saved");
+};
+$("addex").onclick=()=>{const v=$("newex").value.trim();if(!v)return;if(!S.exercises.includes(v))S.exercises.push(v);$("newex").value="";persist();renderAll();$("ex").value=v;pick(v)};
+function beep(){try{navigator.vibrate&&navigator.vibrate(300);const a=new AudioContext(),o=a.createOscillator();o.connect(a.destination);o.start();o.stop(a.currentTime+.3)}catch(e){}}
+function tick(){const el=$("rt");if(rs>0){el.textContent="Rest "+Math.floor(rs/60)+":"+String(rs%60).padStart(2,"0");rs--}else{clearInterval(rt);el.textContent="Go!";beep()}}
+document.querySelector(".chips").onclick=e=>{const r=e.target.dataset.r;if(r){clearInterval(rt);rs=+r;tick();rt=setInterval(tick,1000)}};
+$("csave").onclick=()=>{
+ const km=num($("ckm").value),min=num($("cmin").value);
+ if(!km&&!min){status("Enter a distance or duration");return}
+ S.cardio.push({id:Date.now(),date:$("cdate").value,type:$("ctype").value,session:$("csess").value,reps:num($("crep").value),km,min,hr:num($("chr").value),rpe:num($("crpe").value)});
+ ["ckm","cmin","chr","crpe","crep"].forEach(i=>$(i).value="");persist();renderAll();status("Saved");
+};
+$("tsave").onclick=()=>{const v=$("tval").value;if(v==="")return;S.tests.push({id:Date.now(),date:$("tdate").value,name:$("tname").value,val:num(v)});$("tval").value="";persist();renderAll();status("Saved")};
+$("tadd").onclick=()=>{const n=$("tn").value.trim();if(!n||S.testDefs.some(x=>x.n===n))return;S.testDefs.push({n,u:$("tu").value.trim(),lo:$("tlo").checked?1:0});$("tn").value=$("tu").value="";persist();renderAll();$("tname").value=n};
+document.body.onclick=e=>{
+ const D=e.target.dataset;
+ if(D.pick!==undefined){$("ex").value=D.pick;pick(D.pick);return}
+ if(D.tpd!==undefined){S.tpl.splice(D.tpd,1);persist();renderAll();return}
+ if(D.pld!==undefined){S.plans=S.plans.filter(p=>String(p.id)!==D.pld);persist();renderAll();return}
+ const d=D.del;if(!d||!confirm("Delete this entry?"))return;
+ const k=d[0],id=d.slice(2),f=x=>String(x.id)!==id;
+ if(k==="g")S.entries=S.entries.filter(f);else if(k==="c")S.cardio=S.cardio.filter(f);else S.tests=S.tests.filter(f);
+ persist();renderAll();
+};
+$("csess").onchange=()=>{const m=S.sess.find(x=>x.n===$("csess").value);if(m)$("ctype").value=m.t};
+$("pkind").onchange=()=>{const k=$("pkind").value;$("pgym").classList.toggle("hide",k!=="gym");$("prun").classList.toggle("hide",k!=="run");$("pcond").classList.toggle("hide",k!=="cond")};
+$("prs").onchange=()=>{const m=S.sess.find(x=>x.n===$("prs").value);if(m)$("prt").value=m.t};
+$("padd").onclick=()=>{
+ const k=$("pkind").value,p={id:Date.now(),date:$("pdate").value,kind:k,note:$("pnote").value.trim()};
+ if(k==="gym"){const t=S.tpl.find(x=>x.n===$("ptpl").value);p.items=t?t.ex.slice():[$("pex1").value];p.title=t?t.n:p.items[0]}
+ else if(k==="run"){p.type=$("prt").value;p.session=$("prs").value;p.title=p.type+(p.session?" – "+p.session:"")}
+ else{p.title=$("pca").value.trim()||"Conditioning";p.min=num($("pcd").value)}
+ S.plans.push(p);$("pnote").value="";persist();renderAll();status("Planned");
+};
+const lst=v=>v.split(",").map(x=>x.trim()).filter(Boolean);
+$("tpadd").onclick=()=>{const n=$("tpn").value.trim(),ex=lst($("tpe").value);if(!n||!ex.length)return;ensure(ex);S.tpl.push({n,ex});$("tpn").value=$("tpe").value="";persist();renderAll()};
+$("tpls").onchange=e=>{const i=e.target.dataset.tp;if(i===undefined)return;const ex=lst(e.target.value);ensure(ex);S.tpl[i].ex=ex;persist();renderAll()};
+$("progs").onchange=e=>{const k=e.target.dataset.pg;if(k===undefined)return;const v=sc(e.target.value);if(v.length)S.prog[k]=v;else delete S.prog[k];persist();renderAll()};
+$("pgadd").onclick=()=>{const v=sc($("pgv").value);if(!v.length)return;S.prog[$("pgx").value]=v;$("pgv").value="";persist();renderAll()};
+$("notes").onchange=e=>{S.notes=e.target.value;persist()};
+$("plan").oninput=e=>{if(e.target.dataset.p){S.plan[e.target.dataset.p]=e.target.value;persist()}};
+$("start").onchange=e=>{S.start=e.target.value;persist();renderHome()};
+function csv(t){const R=[];let r=[],c="",q=0;t=t.replace(/^\ufeff/,"");for(let i=0;i<t.length;i++){const h=t[i];if(q){if(h=='"'){if(t[i+1]=='"'){c+='"';i++}else q=0}else c+=h}else if(h=='"')q=1;else if(h==","){r.push(c);c=""}else if(h=="\n"||h=="\r"){if(h=="\r"&&t[i+1]=="\n")i++;r.push(c);R.push(r);r=[];c=""}else c+=h}if(c||r.length){r.push(c);R.push(r)}return R}
+$("gimp").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ const R=csv(await f.text()),h=R[0].map(x=>x.trim().toLowerCase()),ix=n=>h.indexOf(n);
+ const iT=ix("activity type"),iD=ix("date"),iK=ix("distance"),iM=ix("time"),iH=ix("avg hr");
+ if(iT<0||iD<0){status("That doesn’t look like a Garmin activities CSV");return}
+ let n=0;
+ R.slice(1).forEach(r=>{
+  if(!r[iD])return;
+  const date=r[iD].slice(0,10),km=num(r[iK]),p=(r[iM]||"").split(":").map(num),min=r1(p.length===3?p[0]*60+p[1]+p[2]/60:p.length===2?p[0]+p[1]/60:0),ty=/run/i.test(r[iT])?"Run":/cycl|bik/i.test(r[iT])?"Cycling":"Other";
+  if(S.cardio.some(c=>c.date===date&&c.type===ty&&Math.abs(num(c.km)-km)<.05&&Math.abs(num(c.min)-min)<1))return;
+  S.cardio.push({id:Date.now()+n,date,type:ty,km,min,hr:num(r[iH]),rpe:0});n++;
+ });
+ e.target.value="";persist();renderAll();status("Imported "+n+" activities");
+};
+$("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(strip(),null,1)],{type:"application/json"}));a.download="training_backup.json";a.click()};
+$("imp").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{const j=JSON.parse(await f.text());if(!j.entries)throw 0;S=Object.assign(base(),j);persist();renderAll();status("Backup imported")}catch(x){status("That file isn’t a valid backup")}
+ e.target.value="";
+};
+(function(){
+ const t=ymd(new Date());["date","cdate","tdate","pdate"].forEach(i=>$(i).value=t);
+ renderAll();
+ let url=SB_URL,key=SB_KEY;
+ if(url.startsWith("PASTE")){try{const c=JSON.parse(localStorage.getItem("sbcfg"));if(c){url=c.u;key=c.k}}catch(e){}}
+ if(url.startsWith("PASTE")){
+  $("setup").classList.remove("hide");status("First-time setup needed.");
+  $("ssave").onclick=()=>{const u=$("su").value.trim().replace(/\/+$/,""),k=$("sk").value.trim();if(!/^https:\/\/.+/.test(u)||!k){status("Enter the full URL (starting https://) and the key.");return}try{localStorage.setItem("sbcfg",JSON.stringify({u,k}))}catch(e){}location.reload()};
+  return;
+ }
+ try{url=new URL(url).origin}catch(e){}
+ key=key.replace(/["'\s]/g,"");
+ $("auth").classList.remove("hide");
+ const E=t=>{$("aerr").textContent=t};
+ $("rcfg").onclick=()=>{try{localStorage.removeItem("sbcfg")}catch(e){}location.reload()};
+ $("login").onclick=async()=>{
+  if(!sb){E("Supabase didn’t start. Use “Change Supabase settings” to re-enter the URL and key, and check your connection.");return}
+  E("Signing in…");
+  try{const{error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});E(error?error.message:"")}catch(x){E("Sign-in failed: "+x.message)}
+ };
+ $("pw").onkeydown=e=>{if(e.key==="Enter")$("login").click()};
+ if(typeof supabase==="undefined"){E("The Supabase library didn’t load. Check your connection or turn off ad blockers for this page.");return}
+ try{sb=supabase.createClient(url,key)}catch(x){E("Supabase error: "+x.message);return}
+ const go=s=>{const id=s?s.user.id:null;if(id&&id===uid)return;uid=id;document.body.classList.toggle("out",!uid);if(uid)loadState(true);else status("Signed out")};
+ sb.auth.onAuthStateChange((ev,s)=>{if(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"||ev==="SIGNED_OUT")setTimeout(()=>go(s),0)});
+ $("so").onclick=()=>sb.auth.signOut();
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid&&!pending)loadState(false)});
+})();
+</script></body></html>
