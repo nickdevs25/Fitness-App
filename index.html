@@ -40,7 +40,8 @@ textarea{resize:vertical}.out nav,.out section{display:none!important}body:not(.
 .chips button{padding:7px 10px;font-size:13px}
 </style></head><body class="out"><main>
 <h1>Training Log</h1><div class="sub" id="sync">Loading…</div>
-<div class="card" id="auth" style="margin-top:12px"><b>Sign in</b><label>Email</label><input id="em" type="email" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><div class="bar"><button class="btn" id="login">Sign in</button></div></div>
+<div class="card hide" id="setup" style="margin-top:12px"><b>Connect to Supabase</b><div class="hint">Paste your Project URL and publishable key. They are saved on this device only.</div><label>Project URL</label><input id="su" placeholder="https://xxxx.supabase.co"><label>Publishable key</label><input id="sk" placeholder="sb_publishable_..."><div class="bar"><button class="btn" id="ssave">Save</button></div></div>
+<div class="card hide" id="auth" style="margin-top:12px"><b>Sign in</b><label>Email</label><input id="em" type="email" autocomplete="username"><label>Password</label><input id="pw" type="password" autocomplete="current-password"><div class="bar"><button class="btn" id="login">Sign in</button><button class="btn g" id="rcfg">Change Supabase settings</button></div><div id="aerr" style="color:#d92d20;font-size:13px;margin-top:8px"></div></div>
 <nav id="nav"><button data-t="home" class="on">Home</button><button data-t="plan">Plan</button><button data-t="gym">Gym</button><button data-t="cardio">Cardio</button><button data-t="tests">Tests</button><button data-t="prog">Progress</button></nav>
 
 <section id="v-home">
@@ -312,11 +313,28 @@ $("imp").onchange=async e=>{
 (function(){
  const t=ymd(new Date());["date","cdate","tdate","pdate"].forEach(i=>$(i).value=t);
  renderAll();
- if(SB_URL.startsWith("PASTE")){status("Add your Supabase URL and anon key at the top of the script (see setup steps).");return}
- sb=supabase.createClient(SB_URL,SB_KEY);
+ let url=SB_URL,key=SB_KEY;
+ if(url.startsWith("PASTE")){try{const c=JSON.parse(localStorage.getItem("sbcfg"));if(c){url=c.u;key=c.k}}catch(e){}}
+ if(url.startsWith("PASTE")){
+  $("setup").classList.remove("hide");status("First-time setup needed.");
+  $("ssave").onclick=()=>{const u=$("su").value.trim().replace(/\/+$/,""),k=$("sk").value.trim();if(!/^https:\/\/.+/.test(u)||!k){status("Enter the full URL (starting https://) and the key.");return}try{localStorage.setItem("sbcfg",JSON.stringify({u,k}))}catch(e){}location.reload()};
+  return;
+ }
+ try{url=new URL(url).origin}catch(e){}
+ key=key.replace(/["'\s]/g,"");
+ $("auth").classList.remove("hide");
+ const E=t=>{$("aerr").textContent=t};
+ $("rcfg").onclick=()=>{try{localStorage.removeItem("sbcfg")}catch(e){}location.reload()};
+ $("login").onclick=async()=>{
+  if(!sb){E("Supabase didn’t start. Use “Change Supabase settings” to re-enter the URL and key, and check your connection.");return}
+  E("Signing in…");
+  try{const{error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});E(error?error.message:"")}catch(x){E("Sign-in failed: "+x.message)}
+ };
+ $("pw").onkeydown=e=>{if(e.key==="Enter")$("login").click()};
+ if(typeof supabase==="undefined"){E("The Supabase library didn’t load. Check your connection or turn off ad blockers for this page.");return}
+ try{sb=supabase.createClient(url,key)}catch(x){E("Supabase error: "+x.message);return}
  const go=s=>{const id=s?s.user.id:null;if(id&&id===uid)return;uid=id;document.body.classList.toggle("out",!uid);if(uid)loadState(true);else status("Signed out")};
  sb.auth.onAuthStateChange((ev,s)=>{if(ev==="INITIAL_SESSION"||ev==="SIGNED_IN"||ev==="SIGNED_OUT")setTimeout(()=>go(s),0)});
- $("login").onclick=async()=>{status("Signing in…");const{error}=await sb.auth.signInWithPassword({email:$("em").value.trim(),password:$("pw").value});if(error)status(error.message)};
  $("so").onclick=()=>sb.auth.signOut();
  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&uid&&!pending)loadState(false)});
 })();
